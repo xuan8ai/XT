@@ -1,429 +1,238 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日志泄露检索系统</title>
-<!-- 引入 Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<style>
-/* 全局样式 */
-body {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-min-height: 100vh;
-margin: 0;
-font-family: 'Poppins', sans-serif;
-background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-color: #333;
-transition: background 0.5s, color 0.5s;
-}
-
-/* 暗黑模式样式 */
-body.dark-mode {
-background: linear-gradient(135deg, #2c3e50, #34495e);
-color: #fff;
-}
-
-/* 输入框样式 */
-input[type="text"] {
-width: 80%;
-max-width: 500px;
-padding: 15px;
-margin-bottom: 20px;
-border: 2px solid #ddd;
-border-radius: 10px;
-outline: none;
-font-size: 16px;
-transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-input[type="text"]:focus {
-border-color: #007bff;
-box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-}
-
-/* 按钮样式 */
-button {
-padding: 15px 30px;
-background: linear-gradient(135deg, #007bff, #0056b3);
-color: white;
-border: none;
-border-radius: 10px;
-cursor: pointer;
-font-size: 16px;
-transition: transform 0.2s, box-shadow 0.2s;
-}
-
-button:hover {
-transform: translateY(-2px);
-box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-}
-
-button:active {
-transform: translateY(0);
-box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
-}
-
-/* 输出框样式 */
-textarea#outputBox {
-width: 80%;
-max-width: 500px;
-height: 200px;
-margin-top: 20px;
-padding: 15px;
-border: 2px solid #ddd;
-border-radius: 10px;
-font-size: 16px;
-background-color: #fff;
-resize: vertical;
-transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-textarea#outputBox:focus {
-border-color: #007bff;
-box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-}
-
-/* 公告栏样式 */
-#notification-bar {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-background: linear-gradient(135deg, #007bff, #0056b3);
-color: #fff;
-padding: 10px 0;
-overflow: hidden;
-white-space: nowrap;
-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-z-index: 9999;
-font-weight: bold;
-font-size: 16px;
-}
-
-.marquee {
-display: inline-block;
-padding-left: 100%;
-animation: marquee 15s linear infinite;
-}
-
-@keyframes marquee {
-0% { transform: translateX(0); }
-100% { transform: translateX(-100%); }
-}
-
-/* 页脚样式 */
-#footer {
-position: fixed;
-bottom: 0;
-width: 100%;
-text-align: center;
-padding: 15px;
-color: #666;
-background-color: rgba(255, 255, 255, 0.8);
-border-top: 1px solid #ddd;
-font-size: 14px;
-}
-
-body.dark-mode #footer {
-background-color: rgba(0, 0, 0, 0.8);
-color: #ccc;
-}
-
-/* 主题切换按钮样式 */
-#theme-toggle {
-position: fixed;
-bottom: 20px;
-right: 20px;
-width: 50px;
-height: 50px;
-border-radius: 50%;
-background: linear-gradient(135deg, #007bff, #0056b3);
-color: white;
-display: flex;
-justify-content: center;
-align-items: center;
-cursor: pointer;
-z-index: 10000;
-transition: transform 0.2s, box-shadow 0.2s;
-}
-
-#theme-toggle:hover {
-transform: scale(1.1);
-box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-}
-
-/* 运行时间样式 */
-#uptime {
-position: fixed;
-bottom: 60px;
-left: 0;
-width: 100%;
-text-align: center;
-color: #666;
-font-size: 14px;
-}
-
-body.dark-mode #uptime {
-color: #ccc;
-}
-
-/* 友情链接样式 */
-#friend-links {
-display: flex;
-justify-content: center;
-gap: 20px;
-margin-top: 30px;
-}
-
-.friend-link {
-display: flex;
-align-items: center;
-padding: 15px 20px;
-background: linear-gradient(135deg, #007bff, #0056b3);
-color: white;
-border-radius: 10px;
-text-decoration: none;
-font-size: 16px;
-transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.friend-link:hover {
-transform: translateY(-5px);
-box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-}
-
-.friend-link i {
-margin-right: 10px;
-font-size: 20px;
-}
-
-/* 响应式设计 */
-@media (max-width: 600px) {
-input[type="text"], textarea#outputBox {
-width: 90%;
-max-width: none;
-}
-#friend-links {
-flex-direction: column;
-align-items: center;
-}
-}
-
-/* 赞赏二维码样式 */
-#donation-qr {
-display: none;
-position: fixed;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-background: white;
-padding: 20px;
-border-radius: 10px;
-box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-z-index: 10001;
-}
-
-#donation-qr img {
-max-width: 100%;
-border-radius: 10px;
-}
-
-#donation-overlay {
-display: none;
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0, 0, 0, 0.5);
-z-index: 10000;
-}
-</style>
-
-
-<script type="text/javascript">
-    document.onkeydown = function () {
-        if (window.event && window.event.keyCode == 123) {
-            event.keyCode = 0;
-            event.returnValue = false;
-            return false;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目导航</title>
+    <style>
+        /* ---------- 原始样式 ---------- */
+        :root {
+            --primary-color: #00ccff;
+            --secondary-color: #8a8ab5;
+            --background-color: #0a0a2e;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --grid-size: 50px;
+            --transition-speed: 0.3s;
         }
-    };
-</script>
 
-
-<SCRIPT language=JavaScript> 
- 
-function password() { 
- 
-var testV = 1; 
- 
-var pass1 = prompt('请输入密码:',''); 
- 
-while (testV < 3) { 
- 
-if (!pass1) 
- 
-history.go(-1); 
- 
-if (pass1 == "smaq2025666@" ) { 
- 
-alert('密码正确!'); 
- 
-break; 
- 
-} 
- 
-testV+=-1; 
- 
-var pass1 = prompt('密码错误!请联系微信(Attack-Xuan8ai)获取密码后重新输入:'); 
- 
-} 
- 
-if (pass1!="password" & testV ==3) 
- 
-history.go(-1); 
- 
-return " "; 
- 
-} 
- 
-document.write(password()); 
-
-</SCRIPT>
-
-
-
-</head>
-<body>
-<div id="theme-toggle">🌙</div>
-<div id="notification-bar">
-<div class="marquee" id="notification-content"></div>
-</div>
-<input type="text" id="keywordInput" placeholder="请输入关键字...">
-<button onclick="searchKeyword()">搜索</button>
-<textarea id="outputBox" readonly></textarea>
-
-<!-- 友情链接 -->
-<div id="friend-links">
-<a href="https://www.cn-fnst.top" class="friend-link" target="_blank">
-<i class="fas fa-comments"></i>
-隼目安全论坛
-</a>
-<a href="https://ctf.cn-fnst.top" class="friend-link" target="_blank">
-<i class="fas fa-trophy"></i>
-Sum::CTF平台
-</a>
-<button id="donate-btn" onclick="showDonationModal()">
-<i class="fas fa-hand-holding-heart"></i>
-赞赏支持
-</button>
-
-</div>
-<div id="footer">
-<div id="uptime"></div>
-&copy; 2024-2026 隼目安全 版权所有
-</div>
-
-<!-- 赞赏二维码 -->
-<div id="donation-qr">
-<img src="https://www.cn-fnst.top/wp-content/uploads/2024/07/f0b43bad1420240710032819.png" alt="赞赏二维码">
-</div>
-<div id="donation-overlay" onclick="hideDonationQR()"></div>
-
-<script>
-var isDarkMode = false;
-function toggleTheme() {
-isDarkMode = !isDarkMode;
-document.body.classList.toggle('dark-mode', isDarkMode);
-document.getElementById('theme-toggle').innerText = isDarkMode ? '☀️' : '🌙';
-}
-function showNotification() {
-fetch('https://xuan8ai.github.io/XT/gg.txt')
-.then(response => {
-if (!response.ok) {
-throw new Error('公告加载失败');
-}
-return response.text();
-})
-.then(text => {
-document.getElementById('notification-content').innerText = text;
-})
-.catch(error => {
-console.error('Failed to load notification.', error);
-document.getElementById('notification-content').innerText = '公告加载失败，请稍后重试。';
-});
-}
-function searchKeyword() {
-    var keyword = document.getElementById('keywordInput').value;
-    document.getElementById('outputBox').value = '';
-    fetch('https://xuan8ai.github.io/XT/xt.txt')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('文件加载失败');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        return response.text();
-    })
-    .then(text => {
-        var lines = text.split('\n');
-        var found = false;
-        for (var line of lines) {
-            if (line.toLowerCase().includes(keyword.toLowerCase())) {
-                document.getElementById('outputBox').value += line + '\n';
-                document.getElementById('outputBox').value += '————————————————\n';
-                found = true;
+
+        body {
+            min-height: 100vh;
+            background: var(--background-color);
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .background {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            background-image: 
+                linear-gradient(90deg, transparent 49%, 
+                    rgba(0,204,255,0.1) 50%, transparent 51%),
+                linear-gradient(180deg, transparent 49%, 
+                    rgba(0,204,255,0.1) 50%, transparent 51%);
+            background-size: var(--grid-size) var(--grid-size);
+            
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: 
+                    radial-gradient(circle at 10% 20%, 
+                        rgba(0, 102, 255, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 90% 80%, 
+                        rgba(0, 204, 255, 0.1) 0%, transparent 50%);
+                animation: gradientMove 20s linear infinite;
             }
         }
-        if (!found) {
-            document.getElementById('outputBox').value = '未找到相关泄露信息。';
+
+        .container {
+            position: relative;
+            max-width: 1200px;
+            margin-inline: auto;
+            padding: 2rem;
+            z-index: 1;
         }
-    })
-    .catch(error => {
-        document.getElementById('outputBox').value = '读取文件失败，请稍后重试。';
-        console.error('Error:', error);
-    });
-}
-function showUptime() {
-var startTime = new Date('2024-06-18T21:40:00');
-var now = new Date();
-var diff = now - startTime;
-var hours = Math.floor(diff / (1000 * 60 * 60));
-var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-var seconds = Math.floor((diff % (1000 * 60)) / 1000);
-document.getElementById('uptime').textContent = '本站已运行: ' + hours + ' 小时 ' + minutes + ' 分钟 ' + seconds + ' 秒';
-}
-function showDonationQR() {
-document.getElementById('donation-qr').style.display = 'block';
-document.getElementById('donation-overlay').style.display = 'block';
-}
-function hideDonationQR() {
-document.getElementById('donation-qr').style.display = 'none';
-document.getElementById('donation-overlay').style.display = 'none';
-}
-window.onload = function() {
-showNotification();
-showUptime();
-setInterval(showUptime, 1000);
-document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-};
 
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem 0;
+        }
 
-// ...existing code...
-function showDonationModal() {
-    document.getElementById('donation-qr').style.display = 'block';
-    document.getElementById('donation-overlay').style.display = 'block';
-}
+        .nav-card {
+            display: block;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            border: 1px solid rgba(0, 204, 255, 0.2);
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 
+                transform var(--transition-speed) ease,
+                background var(--transition-speed) ease;
 
-function hideDonationQR() {
-    document.getElementById('donation-qr').style.display = 'none';
-    document.getElementById('donation-overlay').style.display = 'none';
-}
+            &::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(0, 204, 255, 0.2),
+                    transparent
+                );
+                transition: left 0.5s;
+            }
 
+            &:hover {
+                transform: translateY(-10px);
+                background: rgba(255, 255, 255, 0.1);
 
-</script>
+                &::before {
+                    left: 100%;
+                }
+            }
+
+            &[target="_blank"]::after {
+                content: "↗";
+                position: absolute;
+                top: 0.8rem;
+                right: 1rem;
+                color: var(--primary-color);
+                opacity: 0.7;
+            }
+        }
+
+        .card-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+        }
+
+        .card-desc {
+            color: var(--secondary-color);
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        @keyframes gradientMove {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .nav-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .nav-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (hover: none) {
+            .nav-card:hover {
+                transform: none;
+            }
+        }
+
+        /* ---------- 新增公告栏样式 ---------- */
+        .announcement {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(0,204,255,0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+        }
+        .announcement-title {
+            color: #00ccff;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .announcement-content {
+            color: #8a8ab5;
+            line-height: 1.6;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .announcement-content::-webkit-scrollbar {
+            width: 5px;
+        }
+        .announcement-content::-webkit-scrollbar-thumb {
+            background: rgba(0,204,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="background" aria-hidden="true"></div>
+    
+    <main class="container">
+        <!-- 新增公告栏 -->
+        <div class="announcement">
+            <div class="announcement-title">📢 系统公告</div>
+            <div class="announcement-content" id="gg">正在加载公告...</div>
+        </div>
+
+        <!-- 原始导航内容 -->
+        <nav class="nav-grid" aria-label="项目导航">
+            <a href="https://xuan8ai.github.io/xuanbai/1+x/" class="nav-card" target="_blank" rel="noopener">
+                <h2 class="card-title">1+x题库</h2>
+                <p class="card-desc">基于宇视科技有限公司1+x考证的词库而搭建的题目搜索工具</p>
+            </a>
+
+            <a href="https://xuan8ai.github.io/cqjypg/nz/" class="nav-card" target="_blank" rel="noopener">
+                <h2 class="card-title">重庆综合素质评价</h2>
+                <p class="card-desc">重庆中职生综合素质评价管理系统内置浏览器版（安卓版）</p>
+            </a>
+
+            <a href="http://iecf2e82.xy.procc.top/cqjypg/index.html" class="nav-card" target="_blank" rel="noopener">
+                <h2 class="card-title">重庆综合素质评价</h2>
+                <p class="card-desc">重庆中职生综合素质评价管理系统内置浏览器版（苹果版）</p>
+            </a>
+
+            <a href="https://www.cn-fnst.top" class="nav-card" target="_blank" rel="noopener">
+                <h2 class="card-title">隼目安全</h2>
+                <p class="card-desc">隼目安全官方论坛</p>
+            </a>
+        </nav>
+    </main>
+
+    <!-- 新增脚本 -->
+    <script>
+         // 公告加载（保持原有功能不变）
+         fetch('https://xuan8ai.github.io/XT/gg.txt')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('gg').textContent = text;
+            })
+            .catch(() => {
+                document.getElementById('gg').textContent = '公告加载失败';
+            });
+    </script>
 </body>
 </html>
