@@ -40,7 +40,7 @@
             background-color: #007BFF;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 8x;
             cursor: pointer;
             font-size: 16px;
             transition: all 0.3s ease;
@@ -93,6 +93,13 @@
             color: #666;
             font-style: italic;
         }
+        /* 新增高亮样式 */
+        .highlight {
+            background-color: #ffeb3b;
+            color: #333;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -110,9 +117,11 @@
         ];
 
         let abortController = null;
-        let hasResults = false;
+        let currentSearchId = 0;
 
         async function startSearch() {
+            // 生成新的搜索ID
+            const searchId = ++currentSearchId;
             // 终止之前的搜索
             if (abortController) {
                 abortController.abort();
@@ -121,9 +130,10 @@
 
             const keyword = document.getElementById('searchInput').value.trim();
             const resultsDiv = document.getElementById('results');
+            
+            // 清空前次结果
             resultsDiv.innerHTML = '';
-            hasResults = false;
-
+            
             if (!keyword) {
                 alert('请输入搜索关键词！');
                 return;
@@ -133,21 +143,21 @@
             
             try {
                 await Promise.all(fileUrls.map(async url => {
-                    if (!url) return;
+                    if (!url || searchId !== currentSearchId) return;
 
                     try {
                         const response = await fetch(url, {
                             signal: abortController.signal
                         });
 
-                        if (!response.ok) return;
+                        if (!response.ok || searchId !== currentSearchId) return;
 
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder();
                         let lineNumber = 1;
                         let buffer = '';
 
-                        while (true) {
+                        while (searchId === currentSearchId) {
                             const { done, value } = await reader.read();
                             if (done) break;
 
@@ -156,44 +166,59 @@
                             buffer = lines.pop() || '';
 
                             for (const line of lines) {
+                                if (searchId !== currentSearchId) break;
                                 if (line.includes(keyword)) {
-                                    if (!hasResults) hasResults = true;
-                                    // 立即插入结果
-                                    resultsDiv.appendChild(createResultItem(line, lineNumber));
+                                    // 立即插入高亮结果
+                                    resultsDiv.appendChild(createResultItem(line, lineNumber, keyword));
                                 }
                                 lineNumber++;
                             }
 
                             // 处理剩余内容
                             if (buffer.includes(keyword)) {
-                                resultsDiv.appendChild(createResultItem(buffer, lineNumber));
+                                resultsDiv.appendChild(createResultItem(buffer, lineNumber, keyword));
                             }
                         }
 
                     } catch (error) {
-                        if (error.name !== 'AbortError') {
+                        if (error.name !== 'AbortError' && searchId === currentSearchId) {
                             console.error(`文件处理失败: ${url}`, error);
                         }
                     }
                 }));
 
-                if (!hasResults) showNoResults();
+                if (searchId === currentSearchId && resultsDiv.children.length === 0) {
+                    showNoResults();
+                }
             } catch (error) {
-                if (error.name !== 'AbortError') {
+                if (error.name !== 'AbortError' && searchId === currentSearchId) {
                     console.error('搜索出错:', error);
                     showErrorMessage();
                 }
             } finally {
-                hideLoading();
+                if (searchId === currentSearchId) {
+                    hideLoading();
+                }
             }
         }
 
-        function createResultItem(line, lineNumber) {
+        function createResultItem(line, lineNumber, keyword) {
+            // 转义特殊字符用于正则表达式
+            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const highlightRegex = new RegExp(`(${escapedKeyword})`, 'gi');
+            
+            // 创建高亮内容
+            const highlighted = line.trim()
+                .replace(highlightRegex, '<span class="highlight">$1</span>')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
             const div = document.createElement('div');
             div.className = 'result-item';
             div.innerHTML = `
                 <div style="margin-bottom: 4px; color: #007BFF;">行号: ${lineNumber}</div>
-                <div style="word-break: break-all;">${line.trim()}</div>
+                <div style="word-break: break-all;">${highlighted}</div>
             `;
             return div;
         }
