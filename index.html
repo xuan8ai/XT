@@ -40,7 +40,7 @@
             background-color: #007BFF;
             color: white;
             border: none;
-            border-radius: 8x;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             transition: all 0.3s ease;
@@ -93,11 +93,10 @@
             color: #666;
             font-style: italic;
         }
-        /* 新增高亮样式 */
         .highlight {
             background-color: #ffeb3b;
             color: #333;
-            padding: 2px 4px;
+            padding: 0 2px;
             border-radius: 3px;
         }
     </style>
@@ -119,28 +118,29 @@
         let abortController = null;
         let currentSearchId = 0;
 
+        // HTML特殊字符转义函数
+        const escapeHTML = str => str.replace(/[&<>]/g, tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;'
+        }[tag]));
+
         async function startSearch() {
-            // 生成新的搜索ID
             const searchId = ++currentSearchId;
-            // 终止之前的搜索
-            if (abortController) {
-                abortController.abort();
-            }
+            if (abortController) abortController.abort();
             abortController = new AbortController();
 
             const keyword = document.getElementById('searchInput').value.trim();
             const resultsDiv = document.getElementById('results');
-            
-            // 清空前次结果
             resultsDiv.innerHTML = '';
-            
+
             if (!keyword) {
                 alert('请输入搜索关键词！');
                 return;
             }
 
             showLoading();
-            
+
             try {
                 await Promise.all(fileUrls.map(async url => {
                     if (!url || searchId !== currentSearchId) return;
@@ -168,18 +168,21 @@
                             for (const line of lines) {
                                 if (searchId !== currentSearchId) break;
                                 if (line.includes(keyword)) {
-                                    // 立即插入高亮结果
-                                    resultsDiv.appendChild(createResultItem(line, lineNumber, keyword));
+                                    const safeLine = escapeHTML(line);
+                                    resultsDiv.appendChild(
+                                        createHighlightedItem(safeLine, lineNumber, keyword)
+                                    );
                                 }
                                 lineNumber++;
                             }
 
-                            // 处理剩余内容
                             if (buffer.includes(keyword)) {
-                                resultsDiv.appendChild(createResultItem(buffer, lineNumber, keyword));
+                                const safeBuffer = escapeHTML(buffer);
+                                resultsDiv.appendChild(
+                                    createHighlightedItem(safeBuffer, lineNumber, keyword)
+                                );
                             }
                         }
-
                     } catch (error) {
                         if (error.name !== 'AbortError' && searchId === currentSearchId) {
                             console.error(`文件处理失败: ${url}`, error);
@@ -196,23 +199,17 @@
                     showErrorMessage();
                 }
             } finally {
-                if (searchId === currentSearchId) {
-                    hideLoading();
-                }
+                if (searchId === currentSearchId) hideLoading();
             }
         }
 
-        function createResultItem(line, lineNumber, keyword) {
-            // 转义特殊字符用于正则表达式
+        function createHighlightedItem(text, lineNumber, keyword) {
+            // 转义正则特殊字符
             const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const highlightRegex = new RegExp(`(${escapedKeyword})`, 'gi');
+            const regex = new RegExp(`(${escapedKeyword})`, 'gi');
             
-            // 创建高亮内容
-            const highlighted = line.trim()
-                .replace(highlightRegex, '<span class="highlight">$1</span>')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            // 安全的高亮替换
+            const highlighted = text.replace(regex, '<span class="highlight">$1</span>');
 
             const div = document.createElement('div');
             div.className = 'result-item';
