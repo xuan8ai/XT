@@ -3,236 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>项目导航</title>
+    <title>TXT 文件内容检索</title>
     <style>
-        /* ---------- 原始样式 ---------- */
-        :root {
-            --primary-color: #00ccff;
-            --secondary-color: #8a8ab5;
-            --background-color: #0a0a2e;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --grid-size: 50px;
-            --transition-speed: 0.3s;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            min-height: 100vh;
-            background: var(--background-color);
-            font-family: system-ui, -apple-system, sans-serif;
-            overflow: hidden;
-            position: relative;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
         }
-
-        .background {
-            position: fixed;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            background-image: 
-                linear-gradient(90deg, transparent 49%, 
-                    rgba(0,204,255,0.1) 50%, transparent 51%),
-                linear-gradient(180deg, transparent 49%, 
-                    rgba(0,204,255,0.1) 50%, transparent 51%);
-            background-size: var(--grid-size) var(--grid-size);
-            
-            &::before {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: 
-                    radial-gradient(circle at 10% 20%, 
-                        rgba(0, 102, 255, 0.1) 0%, transparent 50%),
-                    radial-gradient(circle at 90% 80%, 
-                        rgba(0, 204, 255, 0.1) 0%, transparent 50%);
-                animation: gradientMove 20s linear infinite;
-            }
+        h1 {
+            color: #444;
+            text-align: center;
+            margin-bottom: 20px;
         }
-
-        .container {
-            position: relative;
-            max-width: 1200px;
-            margin-inline: auto;
-            padding: 2rem;
-            z-index: 1;
+        #searchContainer {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
         }
-
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            padding: 2rem 0;
+        #searchInput {
+            padding: 10px;
+            width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
         }
-
-        .nav-card {
-            display: block;
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 2rem;
-            border: 1px solid rgba(0, 204, 255, 0.2);
-            text-decoration: none;
-            color: inherit;
+        #searchInput:focus {
+            border-color: #007BFF;
+        }
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: 
-                transform var(--transition-speed) ease,
-                background var(--transition-speed) ease;
-
-            &::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(0, 204, 255, 0.2),
-                    transparent
-                );
-                transition: left 0.5s;
-            }
-
-            &:hover {
-                transform: translateY(-10px);
-                background: rgba(255, 255, 255, 0.1);
-
-                &::before {
-                    left: 100%;
-                }
-            }
-
-            &[target="_blank"]::after {
-                content: "↗";
-                position: absolute;
-                top: 0.8rem;
-                right: 1rem;
-                color: var(--primary-color);
-                opacity: 0.7;
-            }
+            font-size: 16px;
+            transition: background-color 0.3s ease;
         }
-
-        .card-title {
-            color: var(--primary-color);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+        button:hover {
+            background-color: #0056b3;
         }
-
-        .card-desc {
-            color: var(--secondary-color);
-            line-height: 1.6;
-            font-size: 0.9rem;
+        #results {
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        @keyframes gradientMove {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-
-        @media (max-width: 768px) {
-            .nav-grid {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-
-            .container {
-                padding: 1rem;
-            }
-
-            .nav-card {
-                padding: 1.5rem;
-            }
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-
-        @media (hover: none) {
-            .nav-card:hover {
-                transform: none;
-            }
+        .result-item strong {
+            color: #007BFF;
         }
-
-        /* ---------- 新增公告栏样式 ---------- */
-        .announcement {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(0,204,255,0.2);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-        }
-        .announcement-title {
-            color: #00ccff;
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-        }
-        .announcement-content {
-            color: #8a8ab5;
-            line-height: 1.6;
-            max-height: 150px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .announcement-content::-webkit-scrollbar {
-            width: 5px;
-        }
-        .announcement-content::-webkit-scrollbar-thumb {
-            background: rgba(0,204,255,0.5);
+        .no-results {
+            text-align: center;
+            color: #666;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
-    <div class="background" aria-hidden="true"></div>
-    
-    <main class="container">
-        <!-- 新增公告栏 -->
-        <div class="announcement">
-            <div class="announcement-title">📢 系统公告</div>
-            <div class="announcement-content" id="gg">正在加载公告...</div>
-        </div>
+    <h1>TXT 文件内容检索</h1>
+    <div id="searchContainer">
+        <input type="text" id="searchInput" placeholder="输入关键词">
+        <button onclick="searchFiles()">检索</button>
+    </div>
 
-        <!-- 原始导航内容 -->
-        <nav class="nav-grid" aria-label="项目导航">
-            <a href="https://xuan8ai.github.io/xuanbai/1+x/" class="nav-card" target="_blank" rel="noopener">
-                <h2 class="card-title">1+x题库</h2>
-                <p class="card-desc">基于宇视科技有限公司1+x考证的词库而搭建的题目搜索工具</p>
-            </a>
+    <div id="results"></div>
 
-            <a href="https://xuan8ai.github.io/cqjypg/nz/" class="nav-card" target="_blank" rel="noopener">
-                <h2 class="card-title">重庆综合素质评价</h2>
-                <p class="card-desc">重庆中职生综合素质评价管理系统内置浏览器版（安卓版）</p>
-            </a>
-
-            <a href="http://iecf2e82.xy.procc.top/cqjypg/index.html" class="nav-card" target="_blank" rel="noopener">
-                <h2 class="card-title">重庆综合素质评价</h2>
-                <p class="card-desc">重庆中职生综合素质评价管理系统内置浏览器版（苹果版）</p>
-            </a>
-
-            <a href="https://www.cn-fnst.top" class="nav-card" target="_blank" rel="noopener">
-                <h2 class="card-title">隼目安全</h2>
-                <p class="card-desc">隼目安全官方论坛</p>
-            </a>
-        </nav>
-    </main>
-
-    <!-- 新增脚本 -->
     <script>
-         // 公告加载（保持原有功能不变）
-         fetch('https://xuan8ai.github.io/XT/gg.txt')
-            .then(response => response.text())
-            .then(text => {
-                document.getElementById('gg').textContent = text;
-            })
-            .catch(() => {
-                document.getElementById('gg').textContent = '公告加载失败';
-            });
+        // 定义需要检索的 TXT 文件的 URL 列表
+        const fileUrls = [
+            "https://xuan8ai.github.io/xuanbai/1+x/gonggao.txt",
+            "https://xuan8ai.github.io/XT/gg.txt",
+        ];
+
+        // 检索文件内容
+        async function searchFiles() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // 清空之前的结果
+
+            if (!keyword) {
+                alert('请输入关键词！');
+                return;
+            }
+
+            let hasResults = false;
+
+            // 遍历每个文件的 URL
+            for (const url of fileUrls) {
+                try {
+                    const response = await fetch(url);
+                    const content = await response.text();
+                    const lines = content.split('\n');
+
+                    // 逐行检查是否包含关键词
+                    lines.forEach((line, index) => {
+                        if (line.includes(keyword)) {
+                            hasResults = true;
+                            const resultItem = document.createElement('div');
+                            resultItem.className = 'result-item';
+                            resultItem.innerHTML = `
+                                <strong>行号:</strong> ${index + 1}<br>
+                                <strong>内容:</strong> ${line.trim()}
+                            `;
+                            resultsDiv.appendChild(resultItem);
+                        }
+                    });
+                } catch (error) {
+                    console.error(`无法加载文件: ${url}`, error);
+                }
+            }
+
+            if (!hasResults) {
+                const noResults = document.createElement('div');
+                noResults.className = 'no-results';
+                noResults.textContent = '未找到匹配的结果。';
+                resultsDiv.appendChild(noResults);
+            }
+        }
     </script>
 </body>
 </html>
