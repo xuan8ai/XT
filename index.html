@@ -5,7 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>隼目安全-日志泄露检索系统</title>
     <style>
-        /* 原有样式保持不变 */
+        /* 保持原有样式不变 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #444;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #searchContainer {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        #searchInput {
+            padding: 10px;
+            width: 300px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        #searchInput:focus {
+            border-color: #007BFF;
+        }
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .result-item strong {
+            color: #007BFF;
+        }
+        .no-results {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
         .loading {
             text-align: center;
             color: #666;
@@ -53,7 +121,7 @@
                 return;
             }
 
-            // 添加加载提示
+            // 加载提示
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'loading';
             loadingDiv.innerHTML = `
@@ -63,12 +131,12 @@
             resultsDiv.appendChild(loadingDiv);
 
             try {
-                // 并行发起所有请求
+                // 并行处理所有文件
                 const results = await Promise.allSettled(
                     fileUrls.map(url => processFile(url, keyword))
                 );
 
-                // 清除加载提示
+                // 清除加载状态
                 resultsDiv.innerHTML = '';
 
                 // 处理结果
@@ -91,6 +159,7 @@
             function createResultItem(match) {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'result-item';
+                // 移除了文件显示
                 resultItem.innerHTML = `
                     <strong>行号:</strong> ${match.lineNumber}<br>
                     <strong>内容:</strong> ${match.line}
@@ -112,7 +181,10 @@
                 const response = await fetch(url);
                 const content = await response.text();
                 return content.split('\n')
-                    .map((line, index) => ({ line: line.trim(), lineNumber: index + 1, url }))
+                    .map((line, index) => ({ 
+                        line: line.trim(), 
+                        lineNumber: index + 1 
+                    })) // 移除了url属性
                     .filter(({ line }) => line.includes(keyword));
             } catch (error) {
                 console.error(`无法加载文件: ${url}`, error);
