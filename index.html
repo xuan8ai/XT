@@ -98,7 +98,7 @@
 <body>
     <h1>日志泄露检索系统</h1>
     <div id="searchContainer">
-        <input type="text" id="searchInput" placeholder="输入关键词（支持多个关键词空格分隔）">
+        <input type="text" id="searchInput" placeholder="输入单个关键词">
         <button onclick="startSearch()">立即检索</button>
     </div>
     <div id="results"></div>
@@ -110,6 +110,7 @@
         ];
 
         let abortController = null;
+        let hasResults = false;
 
         async function startSearch() {
             // 终止之前的搜索
@@ -118,11 +119,12 @@
             }
             abortController = new AbortController();
 
-            const keywordInput = document.getElementById('searchInput').value.trim();
+            const keyword = document.getElementById('searchInput').value.trim();
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
+            hasResults = false;
 
-            if (!keywordInput) {
+            if (!keyword) {
                 alert('请输入搜索关键词！');
                 return;
             }
@@ -130,10 +132,6 @@
             showLoading();
             
             try {
-                const keywords = keywordInput.split(' ').filter(k => k);
-                const fragment = document.createDocumentFragment();
-                let totalResults = 0;
-
                 await Promise.all(fileUrls.map(async url => {
                     if (!url) return;
 
@@ -158,24 +156,18 @@
                             buffer = lines.pop() || '';
 
                             for (const line of lines) {
-                                if (containsAny(line, keywords)) {
-                                    totalResults++;
-                                    fragment.appendChild(createResultItem(line, lineNumber));
+                                if (line.includes(keyword)) {
+                                    if (!hasResults) hasResults = true;
+                                    // 立即插入结果
+                                    resultsDiv.appendChild(createResultItem(line, lineNumber));
                                 }
                                 lineNumber++;
                             }
 
-                            // 实时更新结果
-                            if (fragment.children.length > 50) {
-                                resultsDiv.appendChild(fragment.cloneNode(true));
-                                fragment.innerHTML = '';
+                            // 处理剩余内容
+                            if (buffer.includes(keyword)) {
+                                resultsDiv.appendChild(createResultItem(buffer, lineNumber));
                             }
-                        }
-
-                        // 处理剩余内容
-                        if (containsAny(buffer, keywords)) {
-                            totalResults++;
-                            fragment.appendChild(createResultItem(buffer, lineNumber));
                         }
 
                     } catch (error) {
@@ -185,8 +177,7 @@
                     }
                 }));
 
-                resultsDiv.appendChild(fragment);
-                if (totalResults === 0) showNoResults();
+                if (!hasResults) showNoResults();
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     console.error('搜索出错:', error);
@@ -195,10 +186,6 @@
             } finally {
                 hideLoading();
             }
-        }
-
-        function containsAny(text, keywords) {
-            return keywords.some(keyword => text.includes(keyword));
         }
 
         function createResultItem(line, lineNumber) {
@@ -216,7 +203,7 @@
             loader.className = 'loading-indicator';
             loader.innerHTML = `
                 <div class="loader"></div>
-                正在实时流式搜索中...
+                实时搜索中，发现结果将立即显示...
             `;
             document.getElementById('results').appendChild(loader);
         }
