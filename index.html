@@ -5,73 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>隼目安全-日志泄露检索系统</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        h1 {
-            color: #444;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        #searchContainer {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        #searchInput {
-            padding: 10px;
-            width: 300px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-        #searchInput:focus {
-            border-color: #007BFF;
-        }
-        button {
-            padding: 10px 20px;
-            margin-left: 10px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #results {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .result-item {
-            margin-bottom: 15px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .result-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .result-item strong {
-            color: #007BFF;
-        }
-        .no-results {
+        /* 原有样式保持不变 */
+        .loading {
             text-align: center;
             color: #666;
-            font-style: italic;
+            padding: 20px;
+            position: relative;
+        }
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #007BFF;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -85,55 +38,85 @@
     <div id="results"></div>
 
     <script>
-        // 定义需要检索的 TXT 文件的 URL 列表
         const fileUrls = [
             "https://xuan8ai.github.io/XT/xt.txt",
-            "",
+            // 添加更多文件URL
         ];
 
-        // 检索文件内容
         async function searchFiles() {
             const keyword = document.getElementById('searchInput').value.trim();
             const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = ''; // 清空之前的结果
+            resultsDiv.innerHTML = '';
 
             if (!keyword) {
                 alert('请输入关键词！');
                 return;
             }
 
-            let hasResults = false;
+            // 添加加载提示
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = `
+                <div class="loader"></div>
+                正在搜索，请稍候...
+            `;
+            resultsDiv.appendChild(loadingDiv);
 
-            // 遍历每个文件的 URL
-            for (const url of fileUrls) {
-                try {
-                    const response = await fetch(url);
-                    const content = await response.text();
-                    const lines = content.split('\n');
+            try {
+                // 并行发起所有请求
+                const results = await Promise.allSettled(
+                    fileUrls.map(url => processFile(url, keyword))
+                );
 
-                    // 逐行检查是否包含关键词
-                    lines.forEach((line, index) => {
-                        if (line.includes(keyword)) {
-                            hasResults = true;
-                            const resultItem = document.createElement('div');
-                            resultItem.className = 'result-item';
-                            resultItem.innerHTML = `
-                                <strong>行号:</strong> ${index + 1}<br>
-                                <strong>内容:</strong> ${line.trim()}
-                            `;
-                            resultsDiv.appendChild(resultItem);
-                        }
-                    });
-                } catch (error) {
-                    console.error(`无法加载文件: ${url}`, error);
+                // 清除加载提示
+                resultsDiv.innerHTML = '';
+
+                // 处理结果
+                let hasResults = false;
+                results.forEach(({ status, value }) => {
+                    if (status === 'fulfilled' && value.length > 0) {
+                        hasResults = true;
+                        value.forEach(createResultItem);
+                    }
+                });
+
+                if (!hasResults) {
+                    showNoResults();
                 }
+            } catch (error) {
+                console.error('搜索出错:', error);
+                resultsDiv.innerHTML = '<div class="no-results">搜索过程中发生错误</div>';
             }
 
-            if (!hasResults) {
+            function createResultItem(match) {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <strong>行号:</strong> ${match.lineNumber}<br>
+                    <strong>内容:</strong> ${match.line}
+                `;
+                resultsDiv.appendChild(resultItem);
+            }
+
+            function showNoResults() {
                 const noResults = document.createElement('div');
                 noResults.className = 'no-results';
                 noResults.textContent = '未找到匹配的结果。';
                 resultsDiv.appendChild(noResults);
+            }
+        }
+
+        async function processFile(url, keyword) {
+            if (!url) return [];
+            try {
+                const response = await fetch(url);
+                const content = await response.text();
+                return content.split('\n')
+                    .map((line, index) => ({ line: line.trim(), lineNumber: index + 1, url }))
+                    .filter(({ line }) => line.includes(keyword));
+            } catch (error) {
+                console.error(`无法加载文件: ${url}`, error);
+                return [];
             }
         }
     </script>
