@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重庆计算机类高校录取查询</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .search-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-group input {
+            margin-right: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .match {
+            background-color: #e6ffe6;
+        }
+        .no-results {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .school-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .public {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .private {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>重庆计算机类高校录取查询（仅限专科计算机类）</h1>
+    
+    <div class="search-container">
+        <div class="form-group">
+            <label for="score">请输入您的高考分数：</label>
+            <input type="number" id="score" min="0" max="750" placeholder="请输入0-750之间的分数">
+        </div>
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="public-only">
+            <label for="public-only">只显示公办院校</label>
+        </div>
+        <button id="search-btn">查询</button>
+    </div>
+    
+    <div class="results" id="results">
+        <p>请输入您的分数并点击查询按钮查看可报考院校（数据截至2024年12月18日）</p>
+    </div>
+
+    <script>
+        // 模拟数据 - 实际应用中应从后端API获取
+        const schoolsData = [
+    // 公办高职
+    { name: "重庆电力高等专科学校", address: "重庆市九龙坡区黄桷坪区电力四村9号", postalCode: "400053", minScore: 582, type: "public", category: "专科" },
+    { name: "重庆三峡医药高等专科学校", address: "重庆市万州区百安坝天星路366号", postalCode: "404120", minScore: 591, type: "public", category: "专科" },
+    { name: "重庆幼儿师范高等专科学校", address: "重庆市万州区天城镇育才路1号", postalCode: "404000", minScore: 263, type: "public", category: "专科" },
+    { name: "重庆航天职业技术学院", address: "重庆市江北区红石路255号", postalCode: "400021", minScore: 496, type: "public", category: "专科" },
+    { name: "重庆工业职业技术学院", address: "重庆市渝北区（空港）桃源大道1000号", postalCode: "401120", minScore: 652, type: "public", category: "专科" },
+    { name: "重庆三峡职业学院", address: "重庆市万州区科龙路8号", postalCode: "404155", minScore: 491, type: "public", category: "专科" },
+    { name: "重庆工贸职业技术学院", address: "重庆市涪陵区涪南路108号", postalCode: "408099", minScore: 431, type: "public", category: "专科" },
+    { name: "重庆电子工程职业学院", address: "重庆市沙坪坝区大学城东路76号", postalCode: "401331", minScore: 655, type: "public", category: "专科" },
+    { name: "重庆城市管理职业学院", address: "重庆市沙坪坝区虎溪大学城南二路151号", postalCode: "401331", minScore: 639, type: "public", category: "专科" },
+    { name: "重庆工程职业技术学院", address: "重庆市江津区圣泉街道南北大道南段1111号", postalCode: "402260", minScore: 615, type: "public", category: "专科" },
+    { name: "重庆城市职业学院", address: "重庆市永川区兴龙大道1099号", postalCode: "402160", minScore: 555, type: "public", category: "专科" },
+    { name: "重庆水利电力职业技术学院", address: "重庆市永川区昌州大道东段801号", postalCode: "402160", minScore: 543, type: "public", category: "专科" },
+    { name: "重庆工商职业学院", address: "重庆市合川区思源路15号", postalCode: "401520", minScore: 505, type: "public", category: "专科" },
+    { name: "重庆青年职业技术学院", address: "重庆市北碚区盐井坝1号", postalCode: "400712", minScore: 410, type: "public", category: "专科" },
+    { name: "重庆财经职业学院", address: "重庆市永川区昌州大道西段2号", postalCode: "402160", minScore: 504, type: "public", category: "专科" },
+    { name: "重庆建筑工程职业学院", address: "重庆市南岸区梨花大道857号", postalCode: "400072", minScore: 487, type: "public", category: "专科" },
+    { name: "重庆商务职业学院", address: "重庆市沙坪坝区大学城中路81号", postalCode: "401331", minScore: 581, type: "public", category: "专科" },
+    { name: "重庆化工职业学院", address: "重庆市长寿区菩提东路2009号", postalCode: "401228", minScore: 351, type: "public", category: "专科" },
+    { name: "重庆旅游职业学院", address: "重庆市黔江区舟白街道学府一路1号", postalCode: "409000", minScore: 362, type: "public", category: "专科" },
+    { name: "重庆安全技术职业学院", address: "重庆市万州区百安坝安庆路583号", postalCode: "404020", minScore: 374, type: "public", category: "专科" },
+    { name: "重庆文化艺术职业学院", address: "重庆市巴南区尚文大道887号", postalCode: "401320", minScore: 367, type: "public", category: "专科" },
+    { name: "重庆工信职业学院", address: "重庆市渝中区化龙桥交农村360号", postalCode: "400043", minScore: 411, type: "public", category: "专科" },
+    { name: "重庆五一职业技术学院", address: "重庆市巴南区渝南大道1001号", postalCode: "401320", minScore: 223, type: "public", category: "专科" },
+    
+    // 民办高职
+    { name: "重庆海联职业技术学院", address: "重庆市渝北区宝圣湖街道兴科二路1号", postalCode: "401120", minScore: 168, type: "private", category: "专科" },
+    { name: "重庆信息技术职业学院", address: "重庆市万州区平湖路88号", postalCode: "404000", minScore: 245, type: "private", category: "专科" },
+    { name: "重庆传媒职业学院", address: "重庆市铜梁区学府大道302号", postalCode: "402560", minScore: 162, type: "private", category: "专科" },
+    { name: "重庆建筑科技职业学院", address: "重庆市沙坪坝区明德路3号（重庆大学城）", postalCode: "401331", minScore: 228, type: "private", category: "专科" },
+    { name: "重庆应用技术职业学院", address: "重庆市合川区合阳城街道思源路60号", postalCode: "401520", minScore: 168, type: "private", category: "专科" },
+    { name: "重庆科创职业学院", address: "重庆市永川区昌州大道西段28号", postalCode: "402160", minScore: 371, type: "private", category: "专科" },
+    { name: "重庆电讯职业学院", address: "重庆市江津区双福街道办事处阳坪社区居委会", postalCode: "400050", minScore: 231, type: "private", category: "专科" },
+    { name: "重庆能源职业学院", address: "重庆市江津区双福新区福星大道2号", postalCode: "402260", minScore: 172, type: "private", category: "专科" },
+    { name: "重庆交通职业学院", address: "重庆市江津区双福街道祥福大道555号", postalCode: "402247", minScore: 289, type: "private", category: "专科" },
+    { name: "重庆公共运输职业学院", address: "重庆市江津区双福街道祥福大道638号", postalCode: "402247", minScore: 286, type: "private", category: "专科" },
+    { name: "重庆艺术工程职业学院", address: "重庆市铜梁区学府大道267号", postalCode: "402560", minScore: 206, type: "private", category: "专科" },
+    { name: "重庆轻工职业学院", address: "重庆市九龙坡区含谷镇宝洪村4号附88号", postalCode: "401329", minScore: 197, type: "private", category: "专科" },
+    { name: "重庆电信职业学院", address: "重庆市双桥经开区巴岳大道9号", postalCode: "400900", minScore: 265, type: "private", category: "专科" },
+    { name: "重庆经贸职业学院", address: "重庆市黔江区武陵大道北段1785号", postalCode: "409000", minScore: 226, type: "private", category: "专科" },
+    { name: "重庆科技职业学院", address: "重庆市大足区龙滩子街道龙星社区居民委员会", postalCode: "400900", minScore: 393, type: "private", category: "专科" },
+    { name: "重庆资源与环境保护职业学院", address: "重庆市大足区龙岗街道二环南路68号", postalCode: "402360", minScore: 207, type: "private", category: "专科" },
+    { name: "重庆理工职业学院", address: "重庆市巴南区东城大道588号", postalCode: "401346", minScore: 268, type: "private", category: "专科" },
+    { name: "重庆智能工程职业学院", address: "重庆市永川区华为大道666号", postalCode: "402160", minScore: 249, type: "private", category: "专科" },
+    { name: "重庆健康职业学院", address: "重庆市大足区西桥路81号", postalCode: "402360", minScore: 250, type: "private", category: "专科" },
+    { name: "重庆数字产业职业技术学院", address: "重庆市忠县复兴镇电竞大道110号", postalCode: "404300", minScore: 167, type: "private", category: "专科" }
+];
+
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const scoreInput = document.getElementById('score');
+            const publicOnly = document.getElementById('public-only').checked;
+            const score = parseInt(scoreInput.value);
+            
+            if (isNaN(score) || score < 0 || score > 750) {
+                alert('请输入有效的分数（0-750）');
+                return;
+            }
+            
+            // 过滤符合条件的学校
+            let filteredSchools = schoolsData.filter(school => school.minScore <= score);
+            
+            if (publicOnly) {
+                filteredSchools = filteredSchools.filter(school => school.type === 'public');
+            }
+            
+            // 按分数从高到低排序
+            filteredSchools.sort((a, b) => b.minScore - a.minScore);
+            
+            displayResults(filteredSchools, score);
+        });
+        
+        function displayResults(schools, userScore) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (schools.length === 0) {
+                resultsDiv.innerHTML = '<div class="no-results">很遗憾，没有找到符合您分数的高校。</div>';
+                return;
+            }
+            
+            let html = `
+                <h2>查询结果（共 ${schools.length} 所）</h2>
+                <p>您的分数：<strong>${userScore}</strong> 分</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>院校名称</th>
+                            <th>类别</th>
+                            <th>最低录取分</th>
+                            <th>通讯地址</th>
+                            <th>邮编</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            schools.forEach(school => {
+                const isMatch = userScore >= school.minScore;
+                const rowClass = isMatch ? 'match' : '';
+                const typeClass = school.type === 'public' ? 'public' : 'private';
+                const typeText = school.type === 'public' ? '公办' : '民办';
+                
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${school.name} <span class="school-type ${typeClass}">${typeText}</span></td>
+                        <td>${school.category}</td>
+                        <td>${school.minScore}</td>
+                        <td>${school.address}</td>
+                        <td>${school.postalCode}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <p style="margin-top: 20px; color: #666;">注：绿色背景表示您的分数达到或超过该校最低录取分</p>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
